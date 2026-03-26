@@ -312,6 +312,127 @@
 
         .btn-back.active { display: inline-block; }
 
+        .btn-reset {
+            display: none;
+            padding: 8px 20px;
+            font-size: 0.8em;
+            font-weight: 500;
+            font-family: inherit;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.03);
+            color: rgba(255,255,255,0.35);
+            transition: all 0.3s;
+            letter-spacing: 1px;
+        }
+
+        .btn-reset:hover {
+            background: rgba(253,121,168,0.15);
+            border-color: rgba(253,121,168,0.3);
+            color: rgba(253,121,168,0.8);
+        }
+
+        .btn-reset.active { display: inline-block; }
+
+        /* 管理员面板 */
+        .admin-view {
+            display: none;
+            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 28px;
+            padding: 36px 28px;
+            text-align: center;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .admin-view.active { display: block; animation: fadeUp 0.5s ease; }
+
+        .admin-title {
+            font-size: 1.4em;
+            font-weight: 700;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #fff, var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .admin-section {
+            margin-bottom: 24px;
+            text-align: left;
+        }
+
+        .admin-section-title {
+            font-size: 1em;
+            color: var(--warning);
+            margin-bottom: 12px;
+            font-weight: 600;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .admin-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .admin-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            font-size: 0.9em;
+        }
+
+        .admin-item.assigned {
+            background: rgba(0,184,148,0.15);
+            border: 1px solid rgba(0,184,148,0.3);
+        }
+
+        .admin-item.pending {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            opacity: 0.6;
+        }
+
+        .admin-name {
+            color: rgba(255,255,255,0.9);
+        }
+
+        .admin-seat {
+            font-weight: 700;
+            color: var(--success);
+            font-size: 1.1em;
+        }
+
+        .admin-item.pending .admin-seat {
+            color: rgba(255,255,255,0.3);
+            font-size: 0.85em;
+            font-weight: 400;
+        }
+
+        .admin-stats {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-around;
+            font-size: 0.85em;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .admin-stat-number {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: var(--success);
+        }
+
         /* 彩纸 */
         .confetti-box {
             position: fixed;
@@ -385,6 +506,16 @@
         </div>
 
         <button class="btn-back" id="btnBack" onclick="goBack()">重新抽签</button>
+        <div style="margin-top: 16px;">
+            <button class="btn-reset" id="btnReset" onclick="resetAll()">🔄 重置所有抽签（管理员用）</button>
+        </div>
+    </div>
+
+    <!-- 管理员面板 -->
+    <div class="admin-view" id="adminView">
+        <div class="admin-title">📊 座位分配情况</div>
+        <div class="admin-content" id="adminContent"></div>
+        <button class="btn-back" onclick="goBack()">返回</button>
     </div>
 </div>
 
@@ -421,24 +552,94 @@ const EXAM_CONFIG = {
     }
 };
 
-// 座位分配算法
+// ========== 座位分配管理器（确保同组内号码不重复）==========
+const SeatManager = {
+    // 获取已分配的座位记录
+    getAssignedSeats() {
+        const data = localStorage.getItem('seatDraw_assigned');
+        return data ? JSON.parse(data) : {};
+    },
+    
+    // 保存座位分配记录
+    saveAssignedSeats(record) {
+        localStorage.setItem('seatDraw_assigned', JSON.stringify(record));
+    },
+    
+    // 获取某人的座位（如果已分配）
+    getPersonSeat(name) {
+        const record = this.getAssignedSeats();
+        return record[name] || null;
+    },
+    
+    // 分配座位给某人
+    assignSeatToPerson(name, seat) {
+        const record = this.getAssignedSeats();
+        record[name] = seat;
+        this.saveAssignedSeats(record);
+    },
+    
+    // 获取某组已分配的座位
+    getAssignedSeatsInGroup(seats) {
+        const record = this.getAssignedSeats();
+        return seats.filter(seat => Object.values(record).includes(seat));
+    },
+    
+    // 获取某组剩余可用座位
+    getAvailableSeatsInGroup(seats) {
+        const assigned = this.getAssignedSeatsInGroup(seats);
+        return seats.filter(seat => !assigned.includes(seat));
+    },
+    
+    // 清空所有分配记录（用于重置）
+    clearAll() {
+        localStorage.removeItem('seatDraw_assigned');
+    }
+};
+
+// 管理员密码
+const ADMIN_NAME = '韩崇衍';
+
+// 座位分配算法（确保同组内不重复）
 function assignSeat(name, levelData) {
     const { fixed, randomGroups, randomGroup } = levelData;
+    
+    // 1. 检查该人是否已有分配结果
+    const existingSeat = SeatManager.getPersonSeat(name);
+    if (existingSeat !== null) {
+        return { seat: existingSeat, isExisting: true };
+    }
 
+    // 2. 固定座位直接分配
     if (fixed && fixed[name] !== undefined) {
-        return { seat: fixed[name], range: [fixed[name]] };
+        const seat = fixed[name];
+        SeatManager.assignSeatToPerson(name, seat);
+        return { seat: seat, isExisting: false };
     }
 
+    // 3. 2级考试随机组处理
     if (randomGroup && randomGroup.members.includes(name)) {
-        const idx = Math.floor(Math.random() * randomGroup.seats.length);
-        return { seat: randomGroup.seats[idx], range: randomGroup.seats };
+        const available = SeatManager.getAvailableSeatsInGroup(randomGroup.seats);
+        if (available.length === 0) {
+            return { seat: null, error: '该组座位已全部分配完毕' };
+        }
+        const idx = Math.floor(Math.random() * available.length);
+        const seat = available[idx];
+        SeatManager.assignSeatToPerson(name, seat);
+        return { seat: seat, isExisting: false };
     }
 
+    // 4. 1级考试多随机组处理
     if (randomGroups) {
         for (const group of randomGroups) {
             if (group.members.includes(name)) {
-                const idx = Math.floor(Math.random() * group.seats.length);
-                return { seat: group.seats[idx], range: group.seats };
+                const available = SeatManager.getAvailableSeatsInGroup(group.seats);
+                if (available.length === 0) {
+                    return { seat: null, error: '该组座位已全部分配完毕' };
+                }
+                const idx = Math.floor(Math.random() * available.length);
+                const seat = available[idx];
+                SeatManager.assignSeatToPerson(name, seat);
+                return { seat: seat, isExisting: false };
             }
         }
     }
@@ -464,6 +665,55 @@ nameInput.addEventListener('input', () => {
     errorMsg.textContent = '';
 });
 
+// 显示管理员面板
+function showAdminPanel() {
+    document.getElementById('inputView').classList.add('hidden');
+    document.getElementById('adminView').classList.add('active');
+    
+    const assigned = SeatManager.getAssignedSeats();
+    const level2Assigned = EXAM_CONFIG.level2.participants.filter(p => assigned[p] !== undefined).length;
+    const level1Assigned = EXAM_CONFIG.level1.participants.filter(p => assigned[p] !== undefined).length;
+    
+    let html = '';
+    
+    // 2级考试
+    html += '<div class="admin-section">';
+    html += '<div class="admin-section-title">2级考试（4人）</div>';
+    html += '<div class="admin-list">';
+    EXAM_CONFIG.level2.participants.forEach(name => {
+        const seat = assigned[name];
+        const isAssigned = seat !== undefined;
+        html += `<div class="admin-item ${isAssigned ? 'assigned' : 'pending'}">`;
+        html += `<span class="admin-name">${name}</span>`;
+        html += `<span class="admin-seat">${isAssigned ? seat + '号' : '未抽签'}</span>`;
+        html += '</div>';
+    });
+    html += '</div></div>';
+    
+    // 1级考试
+    html += '<div class="admin-section">';
+    html += '<div class="admin-section-title">1级考试（12人）</div>';
+    html += '<div class="admin-list">';
+    EXAM_CONFIG.level1.participants.forEach(name => {
+        const seat = assigned[name];
+        const isAssigned = seat !== undefined;
+        html += `<div class="admin-item ${isAssigned ? 'assigned' : 'pending'}">`;
+        html += `<span class="admin-name">${name}</span>`;
+        html += `<span class="admin-seat">${isAssigned ? seat + '号' : '未抽签'}</span>`;
+        html += '</div>';
+    });
+    html += '</div></div>';
+    
+    // 统计
+    html += '<div class="admin-stats">';
+    html += '<div><div class="admin-stat-number">' + level2Assigned + '/4</div><div>2级已抽</div></div>';
+    html += '<div><div class="admin-stat-number">' + level1Assigned + '/12</div><div>1级已抽</div></div>';
+    html += '<div><div class="admin-stat-number">' + (level2Assigned + level1Assigned) + '/16</div><div>总计</div></div>';
+    html += '</div>';
+    
+    document.getElementById('adminContent').innerHTML = html;
+}
+
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 async function startDraw() {
@@ -472,6 +722,12 @@ async function startDraw() {
     if (!name) {
         errorMsg.textContent = '请输入您的姓名';
         nameInput.focus();
+        return;
+    }
+
+    // 检查是否是管理员
+    if (name === ADMIN_NAME) {
+        showAdminPanel();
         return;
     }
 
@@ -489,6 +745,11 @@ async function startDraw() {
         errorMsg.textContent = '座位分配失败，请重试';
         return;
     }
+    
+    if (result.error) {
+        errorMsg.textContent = result.error;
+        return;
+    }
 
     btnDraw.disabled = true;
     document.getElementById('inputView').classList.add('hidden');
@@ -497,7 +758,13 @@ async function startDraw() {
 
     document.getElementById('drawLevel').textContent = levelName;
     document.getElementById('drawName').textContent = name;
-    document.getElementById('drawSub').textContent = '正在为您抽取评审顺序号...';
+    
+    // 如果之前已经抽过，显示提示
+    if (result.isExisting) {
+        document.getElementById('drawSub').textContent = '您已经抽过签了，以下是您的座位号：';
+    } else {
+        document.getElementById('drawSub').textContent = '正在为您抽取评审顺序号...';
+    }
 
     const ball = document.getElementById('ball');
     const ballNum = document.getElementById('ballNum');
@@ -509,7 +776,7 @@ async function startDraw() {
     const levelSeats = level === 'level2' 
         ? [1, 2, 3, 4]      // 2级：1-4号
         : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];  // 1级：1-12号
-    const spinCount = 20 + Math.floor(Math.random() * 10);
+    const spinCount = result.isExisting ? 10 : (20 + Math.floor(Math.random() * 10));
     for (let i = 0; i < spinCount; i++) {
         ballNum.textContent = levelSeats[Math.floor(Math.random() * levelSeats.length)];
         await sleep(40 + i * 10);
@@ -521,10 +788,15 @@ async function startDraw() {
 
     await sleep(500);
 
-    document.getElementById('drawSub').textContent = '恭喜您，抽签结果如下：';
+    if (result.isExisting) {
+        document.getElementById('drawSub').textContent = '您已经抽过签了，结果如下：';
+    } else {
+        document.getElementById('drawSub').textContent = '恭喜您，抽签结果如下：';
+    }
     document.getElementById('seatLabel').textContent = `您的顺序号是 ${result.seat} 号`;
     document.getElementById('resultLine').classList.add('active');
     document.getElementById('btnBack').classList.add('active');
+    document.getElementById('btnReset').classList.add('active');
 
     showConfetti();
 }
@@ -532,13 +804,23 @@ async function startDraw() {
 function goBack() {
     document.getElementById('inputView').classList.remove('hidden');
     document.getElementById('drawView').classList.remove('active');
+    document.getElementById('adminView').classList.remove('active');
     document.getElementById('resultLine').classList.remove('active');
     document.getElementById('btnBack').classList.remove('active');
+    document.getElementById('btnReset').classList.remove('active');
     document.getElementById('ball').className = 'ball';
     document.getElementById('ballNum').textContent = '?';
     btnDraw.disabled = false;
     nameInput.value = '';
     nameInput.focus();
+}
+
+function resetAll() {
+    if (confirm('确定要重置所有抽签记录吗？此操作将清空所有人的座位分配，所有人可以重新抽签。')) {
+        SeatManager.clearAll();
+        alert('重置成功！所有人可以重新抽签。');
+        goBack();
+    }
 }
 
 function showConfetti() {
