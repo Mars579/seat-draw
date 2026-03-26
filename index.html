@@ -313,27 +313,24 @@
         .btn-back.active { display: inline-block; }
 
         .btn-reset {
-            display: none;
-            padding: 8px 20px;
-            font-size: 0.8em;
+            padding: 10px 24px;
+            font-size: 0.85em;
             font-weight: 500;
             font-family: inherit;
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 10px;
+            border: 1px solid rgba(253,121,168,0.3);
+            border-radius: 12px;
             cursor: pointer;
-            background: rgba(255,255,255,0.03);
-            color: rgba(255,255,255,0.35);
+            background: rgba(253,121,168,0.1);
+            color: rgba(253,121,168,0.9);
             transition: all 0.3s;
             letter-spacing: 1px;
         }
 
         .btn-reset:hover {
-            background: rgba(253,121,168,0.15);
-            border-color: rgba(253,121,168,0.3);
-            color: rgba(253,121,168,0.8);
+            background: rgba(253,121,168,0.2);
+            border-color: rgba(253,121,168,0.5);
+            color: #fff;
         }
-
-        .btn-reset.active { display: inline-block; }
 
         /* 管理员面板 */
         .admin-view {
@@ -506,16 +503,16 @@
         </div>
 
         <button class="btn-back" id="btnBack" onclick="goBack()">重新抽签</button>
-        <div style="margin-top: 16px;">
-            <button class="btn-reset" id="btnReset" onclick="resetAll()">🔄 重置所有抽签（管理员用）</button>
-        </div>
     </div>
 
     <!-- 管理员面板 -->
     <div class="admin-view" id="adminView">
         <div class="admin-title">📊 座位分配情况</div>
         <div class="admin-content" id="adminContent"></div>
-        <button class="btn-back" onclick="goBack()">返回</button>
+        <div style="margin-top: 20px;">
+            <button class="btn-reset" id="btnReset" onclick="resetAll()">🔄 重置所有抽签</button>
+        </div>
+        <button class="btn-back" onclick="goBack()" style="margin-top: 12px;">返回</button>
     </div>
 </div>
 
@@ -796,7 +793,6 @@ async function startDraw() {
     document.getElementById('seatLabel').textContent = `您的顺序号是 ${result.seat} 号`;
     document.getElementById('resultLine').classList.add('active');
     document.getElementById('btnBack').classList.add('active');
-    document.getElementById('btnReset').classList.add('active');
 
     showConfetti();
 }
@@ -807,7 +803,6 @@ function goBack() {
     document.getElementById('adminView').classList.remove('active');
     document.getElementById('resultLine').classList.remove('active');
     document.getElementById('btnBack').classList.remove('active');
-    document.getElementById('btnReset').classList.remove('active');
     document.getElementById('ball').className = 'ball';
     document.getElementById('ballNum').textContent = '?';
     btnDraw.disabled = false;
