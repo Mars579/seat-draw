@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>座位抽签</title>
+    <title>职业指导师综合评审抽签</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -353,8 +353,8 @@
     <!-- 输入阶段 -->
     <div class="card input-view" id="inputView">
         <span class="card-icon">🎯</span>
-        <h1>资格证考试座位抽签</h1>
-        <p class="desc">请输入您的姓名，点击抽签获取座位号<br>结果完全随机，公平公正</p>
+        <h1>职业指导师综合评审抽签</h1>
+        <p class="desc">请输入您的姓名，点击抽签获取评审顺序号<br>结果完全随机，公平公正</p>
 
         <div class="input-wrap">
             <input type="text" id="nameInput" placeholder="请输入姓名" maxlength="10" autocomplete="off">
@@ -370,7 +370,7 @@
     <div class="draw-view" id="drawView">
         <div class="draw-level" id="drawLevel"></div>
         <div class="draw-person">抽签人：<strong id="drawName"></strong></div>
-        <div class="draw-subtitle" id="drawSub">正在为您抽取座位号...</div>
+        <div class="draw-subtitle" id="drawSub">正在为您抽取评审顺序号...</div>
 
         <div class="ball-wrap">
             <div class="ball" id="ball">
@@ -381,7 +381,7 @@
 
         <div class="result-line" id="resultLine">
             <div class="seat-label" id="seatLabel"></div>
-            <div class="seat-hint">请凭此座位号对号入座，祝考试顺利！</div>
+            <div class="seat-hint">请凭此顺序号按序参加评审，祝您顺利通过！</div>
         </div>
 
         <button class="btn-back" id="btnBack" onclick="goBack()">重新抽签</button>
@@ -395,8 +395,8 @@
 const EXAM_CONFIG = {
     // 2级考试：4人，座位1-4号
     level2: {
-        participants: ['林道讯', '张晓莉', '姚玉静', '张晓阳'],
-        fixed: { '林道讯': 4 },
+        participants: ['林道汛', '张晓莉', '姚玉静', '张晓阳'],
+        fixed: { '林道汛': 4 },
         randomGroup: {
             members: ['张晓莉', '姚玉静', '张晓阳'],
             seats: [1, 2, 3]
@@ -497,7 +497,7 @@ async function startDraw() {
 
     document.getElementById('drawLevel').textContent = levelName;
     document.getElementById('drawName').textContent = name;
-    document.getElementById('drawSub').textContent = '正在为您抽取座位号...';
+    document.getElementById('drawSub').textContent = '正在为您抽取评审顺序号...';
 
     const ball = document.getElementById('ball');
     const ballNum = document.getElementById('ballNum');
@@ -522,7 +522,7 @@ async function startDraw() {
     await sleep(500);
 
     document.getElementById('drawSub').textContent = '恭喜您，抽签结果如下：';
-    document.getElementById('seatLabel').textContent = `您的座位是 ${result.seat} 号`;
+    document.getElementById('seatLabel').textContent = `您的顺序号是 ${result.seat} 号`;
     document.getElementById('resultLine').classList.add('active');
     document.getElementById('btnBack').classList.add('active');
 
